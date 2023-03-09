@@ -161,7 +161,7 @@ resource "azurerm_network_security_group" "main" {
   resource_group_name = azurerm_resource_group.main.name
 
   security_rule {
-    name                       = "allow-ssh"
+    name                       = "SSH"
     priority                   = 1001
     direction                  = "Inbound"
     access                     = "Allow"
@@ -171,10 +171,10 @@ resource "azurerm_network_security_group" "main" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
-
+ 
   security_rule {
-    name                       = "allow-http"
-    priority                   = 1002
+    name                       = "HTTP"
+    priority                   = 1003
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
@@ -184,36 +184,62 @@ resource "azurerm_network_security_group" "main" {
     destination_address_prefix = "*"
   }
 }
-resource "azurerm_linux_virtual_machine" "main" {
-  name                            = var.virtual_machine_name
-  resource_group_name             = azurerm_resource_group.main.name
-  location                        = azurerm_resource_group.main.location
-  size                            = "Standard_F2"
-  admin_username                  = "carlos"
-  admin_password                  = "Fkf63dLay12c!"
-  disable_password_authentication = false
-  
-  network_interface_ids      = [azurerm_network_interface.main.id]
-  # network_security_group_id  = azurerm_network_security_group.main.id
+# resource "azurerm_linux_virtual_machine" "main" {
+#   name                            = var.virtual_machine_name
+#   resource_group_name             = azurerm_resource_group.main.name
+#   location                        = azurerm_resource_group.main.location
+#   size                            = "Standard_F2"
+#   admin_username                  = "carlos"
+#   admin_password                  = "Fkf63dLay12c!"
+#   disable_password_authentication = false  
+#   network_interface_ids      = [azurerm_network_interface.main.id]
 
-  # provision_vm_agent         = true
-  # network_interface_ids = [
-  #   azurerm_network_interface.main.id,
-  # ]
-  # network_security_group_id = azurerm_network_security_group.main.id
+#   source_image_reference {
+#     publisher = "Canonical"
+#     offer     = "UbuntuServer"
+#     sku       = "16.04-LTS"
+#     version   = "latest"
+#   }
 
-  source_image_reference {
+#   os_disk {
+#     storage_account_type = "Standard_LRS"
+#     caching              = "ReadWrite"
+#   }
+
+resource "azurerm_virtual_machine" "main" {
+  name                  = var.virtual_machine_name
+  location              = azurerm_resource_group.main.location
+  resource_group_name   = azurerm_resource_group.main.name
+  network_interface_ids = [azurerm_network_interface.main.id]
+  vm_size               = "Standard_DS1_v2"
+
+  storage_image_reference {
     publisher = "Canonical"
     offer     = "UbuntuServer"
-    sku       = "16.04-LTS"
+    sku       = "18.04-LTS"
     version   = "latest"
   }
 
-  os_disk {
-    storage_account_type = "Standard_LRS"
-    caching              = "ReadWrite"
+  storage_os_disk {
+    name              = "example-os-disk"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+    managed_disk_type = "Premium_LRS"
   }
 
+  os_profile {
+    computer_name  = "example-vm"
+    admin_username = "carlos"
+    admin_password = "Fkf63dLay12c!"
+  }
+
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }
+}
+  # identity {
+  #   type = "SystemAssigned"
+  # }
   # provisioner "remote-exec" {
   #   inline = [
   #     "ls -la /tmp",
@@ -225,4 +251,15 @@ resource "azurerm_linux_virtual_machine" "main" {
   #     password = self.admin_password
   #   }
   # }
-}
+
+#Role asignment
+# resource "azurerm_role_assignment" "contributor" {
+#   scope              = "/subscriptions/c4bb6ff3-0427-4190-a257-923681cfce2c"
+#   role_definition_id = data.azurerm_role_definition.contributor.id
+#   principal_id       = "ae2635d6-8670-44cc-b28f-edd775b14de2"
+# }
+
+# data "azurerm_role_definition" "contributor" {
+#   name = "Contributor"
+# }
+# }
